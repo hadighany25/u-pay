@@ -179,22 +179,29 @@
     </div>
 
     <script>
+      // មុខងារនេះជួយចាប់យក Parameters ពី URL ដូចជា ?orderId=...&amount=...
+      const currentUrlParams = window.location.search;
+
       // Check if already logged in
-      if (localStorage.getItem("user")) {
-        const u = JSON.parse(localStorage.getItem("user"));
-        if (u.role === "admin") window.location.href = "admin.html";
-        else window.location.href = "dashboard.html";
+      if (sessionStorage.getItem("user")) {
+        const u = JSON.parse(sessionStorage.getItem("user"));
+
+        // 🔥 កែសម្រួល៖ បើមាន Login ស្រាប់ ហើយ URL មាន orderId ឱ្យវារត់ទៅ transfer.html
+        if (currentUrlParams && currentUrlParams.includes("orderId")) {
+          window.location.href = "transfer.html" + currentUrlParams;
+        } else {
+          if (u.role === "admin") window.location.href = "admin.html";
+          else window.location.href = "dashboard.html";
+        }
       }
 
       async function handleLogin(e) {
         e.preventDefault();
-        // 🔥 Get value from new ID
         const identifier = document.getElementById("identifier").value.trim();
         const password = document.getElementById("password").value.trim();
 
         if (!identifier || !password) return;
 
-        // Show Loading Effect
         const btn = document.querySelector(".btn-login");
         const originalText = btn.innerText;
         btn.innerText = "Verifying...";
@@ -204,14 +211,13 @@
           const res = await fetch("/api/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            // 🔥 Send identifier instead of username
             body: JSON.stringify({ identifier, password }),
           });
 
           const data = await res.json();
 
           if (data.success) {
-            localStorage.setItem("user", JSON.stringify(data.user));
+            sessionStorage.setItem("user", JSON.stringify(data.user));
 
             const Toast = Swal.mixin({
               toast: true,
@@ -227,9 +233,14 @@
             Toast.fire({ icon: "success", title: "Login successfully" });
 
             setTimeout(() => {
-              if (data.user.role === "admin")
-                window.location.href = "admin.html";
-              else window.location.href = "dashboard.html";
+              // 🔥 កែសម្រួល៖ បន្ទាប់ពី Login ជោគជ័យ បើមាន URL Parameters វេរលុយ ឱ្យរត់ទៅ transfer.html
+              if (currentUrlParams && currentUrlParams.includes("orderId")) {
+                window.location.href = "transfer.html" + currentUrlParams;
+              } else {
+                if (data.user.role === "admin")
+                  window.location.href = "admin.html";
+                else window.location.href = "dashboard.html";
+              }
             }, 1000);
           } else {
             btn.innerText = originalText;
